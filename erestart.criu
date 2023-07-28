@@ -1,0 +1,74 @@
+#!/path/to/venv/bin/python
+
+# This script is intended to be run as normal users, through LSF with their
+# normal permissions. The use of capabilities to grant extra permissions only
+# applies to the criu executable and is dropped after, as explained in
+# confluence:
+# https://ssg-confluence.internal.sanger.ac.uk/pages/viewpage.action?pageId=153044333
+
+# Copyright International Business Machines Corp, 2021
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+import os
+import re
+import logging
+import logging.handlers
+import criucommon as cmn
+
+
+def main(argv):
+    # to send to a log file in the checkpoint directory
+    log = cmn.set_log(f"/{os.environ['LSB_CHKPNT_DIR']}/lsf-job-{os.environ['LSB_JOBID']}.cr.log",
+                      logging.INFO)
+
+    # to send to syslog
+    # set_log(None, logging.INFO)
+
+    log.debug("start restarting ......")
+    log.debug(argv)
+
+    # get job cgroup from cgroup dir
+    cgtop = f"/sys/fs/cgroup/memory/lsf/{os.environ['LSF_CGROUP_TOPDIR_KEY']}"
+    jobcg = "^job\." + os.environ['LSB_JOBID'] + "\..*"
+    jobcgre = re.compile(jobcg)
+    jobcgroup = ""
+    for f in os.listdir(cgtop):
+        if (jobcgre.match(f)):
+            jobcgroup = f
+            break
+
+    cgrp_options = ""
+    if jobcgroup != "":
+        cgrp_path = "/lsf/" + os.environ['LSF_CGROUP_TOPDIR_KEY'] + "/" + jobcgroup + "/"
+        mem_cgrp = "memory:" + cgrp_path
+        frz_cgrp = "freezer:" + cgrp_path
+        cpu_cgrp = "cpu,cpuacct:" + cgrp_path
+        cgrp_options = " --cgroup-root " + mem_cgrp + " --cgroup-root " + frz_cgrp + " --cgroup-root " + cpu_cgrp
+
+    # added the -d flag to detach criu after a restart, otherwise a job cant
+    # restart multiple times as, ironically, criu cannot checkpoint itself.
+    cmd = "LSB_RESTART_CMD=/usr/local/bin/criu restore -d -D " + os.environ['LSB_CHKPNT_DIR'] + cgrp_options + " --shell-job --unprivileged \n"
+    log.debug(cmd)
+
+    f = open(os.environ['LSB_CHKPNT_DIR'] + "/.restart_cmd", "w")
+    f.write(cmd)
+    f.close()
+
+    log.debug(".restart_cmd written, leaving script")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
