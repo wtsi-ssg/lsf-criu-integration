@@ -15,13 +15,14 @@ In this example, the `criu` program is stored at `/usr/local/bin/criu` on every
 machine in the cluster. In order to successfully checkpoint an LSF job, it must 
 be given these capabilities as file capabilities:
 
+```
+cap_sys_ptrace,cap_sys_admin=ep
+```
+
 A virtual environment should be setup with the packages in `requirements.txt`
 installed into it. The scripts that have shebangs in them should be pointed
 at this virtual environment.
 
-```
-cap_sys_ptrace,cap_sys_admin=ep
-```
 
 
 ## Why these specific capabilities
