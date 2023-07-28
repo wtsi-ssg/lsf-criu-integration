@@ -61,11 +61,12 @@ submit it with the `-k` option (for more info see the LSF bsub docs).
 
 In order to enable automatic checkpointing and restoring of overrunning jobs,
 you must set -k in addition to having `ENABLE_ORUN_CHKPNT` and 
-`ENABLE_ORUN_RESTART` set in the environment of the job. Additionally, the 
-automatic checkpoints and restarts cap at 2 restarts (3 runs) by default. You
-can change this by setting `ORUN_RESTART_LIMIT` to any integer. Checkpointing 
-in this manner is subject to a timeout, which by default is 180 seconds. You 
-can change this by setting `ORUN_TIMEOUT_SECONDS` to any integer.
+`ENABLE_ORUN_RESTART` set to `Y` in the environment of the job. Additionally, 
+the automatic checkpoints and restarts cap at 2 restarts (3 runs) by default. 
+You can change this by setting `ORUN_RESTART_LIMIT` to any integer. 
+Checkpointing in this manner is subject to a timeout, which by default is 
+180 seconds. You can change this by setting `ORUN_TIMEOUT_SECONDS` to any 
+integer.
 
 ### Debugging
 
